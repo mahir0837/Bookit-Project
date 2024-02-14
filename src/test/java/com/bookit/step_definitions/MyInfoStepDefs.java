@@ -16,7 +16,7 @@ public class MyInfoStepDefs {
 	@Given("user logs in using {string} credentials")
 	public void userLogsInUsingCredentials(String role) {
 
-		Driver.get().get(ConfigurationReader.getProperty("base_url"));
+		Driver.get().get(ConfigurationReader.getProperty("url"));
 		Driver.get().manage().window().maximize();
 		SignInPage signInPage = new SignInPage();
 		signInPage.login(role);
@@ -30,10 +30,4 @@ public class MyInfoStepDefs {
 		
 	}
 
-
-
-
-
-
-	
 }
