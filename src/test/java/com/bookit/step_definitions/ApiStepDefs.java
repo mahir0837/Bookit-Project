@@ -5,6 +5,7 @@ import com.bookit.pages.SelfPage;
 import com.bookit.utilities.BookitUtils;
 import com.bookit.utilities.ConfigurationReader;
 import com.bookit.utilities.DB_Util;
+import com.bookit.utilities.Environment;
 import io.cucumber.java.en.*;
 import io.restassured.http.ContentType;
 import io.restassured.path.json.JsonPath;
@@ -36,7 +37,7 @@ public class ApiStepDefs {
                 .accept(ContentType.JSON)
                 .header("Authorization", accessToken)
                 .when()
-                .get(ConfigurationReader.getProperty("base_url") + endPoint)
+                .get(Environment.BASE_URL + endPoint)
                 .then().extract().response();
     }
 
