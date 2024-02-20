@@ -8,8 +8,11 @@ import com.bookit.utilities.DB_Util;
 import com.bookit.utilities.Environment;
 import io.cucumber.java.en.*;
 import io.restassured.http.ContentType;
+import io.restassured.internal.common.assertion.Assertion;
+import io.restassured.internal.common.assertion.AssertionSupport;
 import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
+import org.junit.Assert;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +28,7 @@ public class ApiStepDefs {
     JsonPath jsonPath;
     String accessToken;
     SelfPage selfPage = new SelfPage();
+
 
     @Given("I logged Bookit api as a {string}")
     public void i_logged_bookit_api_as_a(String role) {
@@ -94,6 +98,89 @@ public class ApiStepDefs {
         assertThat(uiName, equalTo(dbName));
         assertThat(uiRole, equalTo(dbRole));
 
-        System.out.println("UI Name--> "+uiName+" UI Role--> "+uiRole+" DB NAme--> "+ dbName+" DB Role-->  "+dbRole+" Api Role--> "+apiRole+" Api Name--> "+apiName);
+        System.out.println("UI Name--> " + uiName + " UI Role--> " + uiRole + " DB NAme--> " + dbName + " DB Role-->  " + dbRole + " Api Role--> " + apiRole + " Api Name--> " + apiName);
     }
+
+    // ADDING NEW STUDENT
+
+    @When("I send POST request {string} endpoint with following information")
+    public void i_send_post_request_endpoint_with_following_information(String endPoint, Map<String, String> studentPostRequest) {
+
+        Response response = given()
+                .accept(ContentType.JSON)
+                .contentType(ContentType.JSON)
+                .header("Authorization", accessToken)
+                .queryParams(studentPostRequest)
+                .when()
+                .post(Environment.BASE_URL + endPoint).prettyPeek()
+                .then()
+                .statusCode(201).extract().response();
+        this.response = response;
+
+
+    }
+
+    @Then("I delete previously added student")
+    public void i_delete_previously_added_student() {
+        int idToDelete = response.path("entryiId");
+        given()
+                .header("Authorization", accessToken)
+                .when()
+                .pathParam("id", idToDelete)
+                .delete(Environment.BASE_URL + "/api/students/{id}")
+                .then()
+                .statusCode(204);
+    }
+
+    // Add Team
+    @When("Users sends POST request to {string} with following info:")
+    public void users_sends_post_request_to_with_following_info(String endPoint, Map<String, String> postTeamMap) {
+        Response response = given()
+                .accept(ContentType.JSON)
+                .contentType(ContentType.JSON)
+                .header("Authorization", accessToken)
+                .queryParams(postTeamMap)
+                .when()
+                .post(Environment.BASE_URL + endPoint)
+                .then().log().all()
+                .statusCode(201).extract().response();
+        this.response = response;
+    }
+
+    @Then("Database should persist same team info")
+    public void database_should_persist_same_team_info() {
+        int idToCreate = response.path("entryiId");
+        DB_Util.runQuery("SELECT id,name FROM team WHERE id =" + idToCreate + "");
+        Map<String, String> actualTeam = DB_Util.getRowMap(1);
+        JsonPath jsonPath = given()
+                .accept(ContentType.JSON)
+                .header("Authorization", accessToken)
+                .pathParam("id", idToCreate)
+                .when()
+                .get(Environment.BASE_URL + "/api/teams/{id}").prettyPeek()
+                .then().extract().jsonPath();
+        this.jsonPath = jsonPath;
+
+        String actualId = actualTeam.get("id");
+        String actualName = actualTeam.get("name");
+
+       String expectedId=jsonPath.getString("id");
+       String expectedName=jsonPath.getString("name");
+
+        assertThat(expectedId, equalTo(actualId));
+        assertThat(expectedName, equalTo(actualName));
+    }
+
+    @Then("User deletes previously created team")
+    public void user_deletes_previously_created_team() {
+        int idToDelete = jsonPath.getInt("id");
+        given()
+                .header("Authorization", accessToken)
+                .when()
+                .pathParam("id", idToDelete)
+                .delete(Environment.BASE_URL + "/api/teams/{id}").prettyPeek()
+                .then()
+                .statusCode(200);
+    }
+
 }
